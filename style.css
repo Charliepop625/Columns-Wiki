@@ -109,3 +109,15 @@ li { margin-bottom: 0.3rem; }
   main { padding: 1.5rem; }
   p { text-align: left; }
 }
+
+nav summary {
+  cursor: pointer;
+  padding: 0.25rem 0;
+  list-style: none;
+  border-bottom: 1px dotted rgba(107, 82, 56, 0.4);
+}
+nav summary::-webkit-details-marker { display: none; }
+nav summary::before { content: '▸ '; color: var(--accent); }
+nav details[open] > summary::before { content: '▾ '; }
+nav summary:hover { color: var(--accent); font-style: italic; }
+nav details a { padding-left: 1.25rem; font-size: 1.05rem; }

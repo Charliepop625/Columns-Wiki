@@ -46,10 +46,29 @@ const pages = files.map((f) => {
   return { slug, title, body };
 });
 
-const nav = '<a href="/">Home</a>' +
-  pages.filter((p) => p.slug !== 'index')
-       .sort((a, b) => a.title.localeCompare(b.title))
-       .map((p) => `<a href="/${p.slug}/">${p.title}</a>`).join('');
+// Dropdown groups: label, plus the pages inside it in the order you want
+const groups = [
+  { label: 'Residents', slugs: ['isador', 'dion', 'corinthia', 'all-residents'] },
+];
+
+const grouped = new Set(groups.flatMap((g) => g.slugs));
+const bySlug = Object.fromEntries(pages.map((p) => [p.slug, p]));
+const link = (p) => `<a href="/${p.slug}/">${p.title}</a>`;
+
+function buildNav(current) {
+  const dropdowns = groups.map((g) => {
+    const items = g.slugs.filter((s) => bySlug[s]).map((s) => link(bySlug[s])).join('');
+    const open = g.slugs.includes(current) ? ' open' : '';
+    return `<details${open}><summary>${g.label}</summary>${items}</details>`;
+  }).join('');
+
+  const loose = pages
+    .filter((p) => p.slug !== 'index' && !grouped.has(p.slug))
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .map(link).join('');
+
+  return '<a href="/">Home</a>' + dropdowns + loose;
+}
 
 const template = fs.readFileSync('template.html', 'utf8');
 
@@ -59,7 +78,7 @@ for (const p of pages) {
   fs.mkdirSync(outDir, { recursive: true });
   const html = template
     .replace(/{{title}}/g, p.title)
-    .replace('{{nav}}', nav)
+    .replace('{{nav}}', buildNav(p.slug))
     .replace('{{content}}', markdown(p.body));
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
