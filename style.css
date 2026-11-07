@@ -1,0 +1,5 @@
+body { margin: 0; display: flex; font-family: Georgia, serif; line-height: 1.6; }
+nav { width: 220px; padding: 1.5rem; background: #1f1b16; min-height: 100vh; }
+nav a { display: block; color: #e8dcc4; text-decoration: none; padding: 0.2rem 0; }
+main { max-width: 700px; padding: 2rem; }
+@media (max-width: 700px) { body { flex-direction: column; } nav { width: auto; min-height: 0; } }
