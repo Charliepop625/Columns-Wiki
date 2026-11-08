@@ -1,5 +1,4 @@
 ---
-title: Home
+title: Index
 ---
 
-Welcome to the wiki. Start with [[Waterdeep]].
