@@ -5,6 +5,33 @@ const crypto = require('crypto');
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const pageLookup = {};   // filled in after the pages are read
 
+function list(block) {
+  const lines = block.split('\n').filter((l) => l.trim());
+  let html = '';
+  const stack = [];
+  for (const line of lines) {
+    const m = line.match(/^(\s*)[-*] (.*)$/);
+    if (!m) continue;
+    const indent = m[1].replace(/\t/g, '    ').length;
+    if (stack.length === 0 || indent > stack[stack.length - 1]) {
+      html += '<ul><li>';
+      stack.push(indent);
+    } else {
+      while (stack.length > 1 && indent < stack[stack.length - 1]) {
+        html += '</li></ul>';
+        stack.pop();
+      }
+      html += '</li><li>';
+    }
+    html += inline(m[2]);
+  }
+  while (stack.length) {
+    html += '</li></ul>';
+    stack.pop();
+  }
+  return html;
+}
+
 function markdown(md) {
   return md
     .split(/\n{2,}/)
@@ -13,10 +40,7 @@ function markdown(md) {
       if (!block) return '';
       const h = block.match(/^(#{1,4})\s+(.*)$/);
       if (h) return `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
-      if (/^[-*] /.test(block)) {
-        const items = block.split('\n').map((l) => `<li>${inline(l.replace(/^[-*] /, ''))}</li>`);
-        return `<ul>${items.join('')}</ul>`;
-      }
+      if (/^[-*] /.test(block)) return list(block);
       return `<p>${inline(block)}</p>`;
     })
     .join('\n');
@@ -69,8 +93,10 @@ function findMarkdown(dir) {
 const files = findMarkdown('content');
 const pages = files.map((f) => {
   const slug = path.basename(f, '.md');
+  const rel = path.relative('content', path.dirname(f));
+  const folder = rel ? rel.split(path.sep)[0] : '';
   const { title, body, locked } = parse(fs.readFileSync(f, 'utf8'), slug);
-  return { slug, title, body, locked };
+  return { slug, title, body, locked, folder };
 });
 const scramble = (s) => s.replace(/[\p{L}\p{N}]/gu, rune);
 
@@ -82,30 +108,43 @@ pages.forEach((p) => {
   pageLookup[p.slug] = p;
 });
 
-// Each dropdown: a label, plus the page file names (without .md) inside it, in order.
-const groups = [
-  { label: 'Residents',  slugs: ['isador', 'dion', 'corinthia', 'all-residents'] },
-  { label: 'Locations',  slugs: ['main-hall'] },
-  { label: 'History',    slugs: ['chapter1', 'chapter2', 'chapter3', 'chapter4', 'chapter5', 'chapter6', 'chapter7', 'chapter8', 'chapter9'] },
-  { label: 'Entities',   slugs: ['the-light'] },
-];
+function readFolderInfo(folder) {
+  const file = path.join('content', folder, '_folder.json');
+  let info = {};
+  if (fs.existsSync(file)) {
+    try { info = JSON.parse(fs.readFileSync(file, 'utf8')); }
+    catch (e) { throw new Error(`Problem in ${file}: ${e.message}`); }
+  }
+  return {
+    label: info.label || folder.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    order: info.order || [],
+    position: info.position ?? 100,
+  };
+}
 
-const grouped = new Set(groups.flatMap((g) => g.slugs));
-const bySlug = Object.fromEntries(pages.map((p) => [p.slug, p]));
+const folderNames = [...new Set(pages.map((p) => p.folder).filter(Boolean))];
+const groups = folderNames
+  .map((name) => ({ name, ...readFolderInfo(name) }))
+  .sort((a, b) => a.position - b.position || a.label.localeCompare(b.label));
+
+function sortPages(list, order) {
+  return list.sort((a, b) => {
+    const ia = order.indexOf(a.slug), ib = order.indexOf(b.slug);
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? Infinity : ia) - (ib === -1 ? Infinity : ib);
+    return (a.locked - b.locked) || a.title.localeCompare(b.title, undefined, { numeric: true });
+  });
+}
+
 const link = (p) => `<a href="/${p.outSlug}/">${p.shownTitle}</a>`;
 
 function buildNav(current) {
   const dropdowns = groups.map((g) => {
-    const existing = g.slugs.filter((s) => pageLookup[s]);
-    if (existing.length === 0) return '';
-    const items = existing.map((s) => link(pageLookup[s])).join('');
-    const open = g.slugs.includes(current) ? ' open' : '';
-    return `<details${open}><summary>${g.label}</summary>${items}</details>`;
+    const members = sortPages(pages.filter((p) => p.folder === g.name), g.order);
+    const open = members.some((p) => p.slug === current) ? ' open' : '';
+    return `<details${open}><summary>${g.label}</summary>${members.map(link).join('')}</details>`;
   }).join('');
 
-  const loose = pages
-    .filter((p) => p.slug !== 'index' && !grouped.has(p.slug))
-    .sort((a, b) => (a.locked - b.locked) || a.title.localeCompare(b.title))
+  const loose = sortPages(pages.filter((p) => !p.folder && p.slug !== 'index'), [])
     .map(link).join('');
 
   return '<a href="/">Home</a>' + dropdowns + loose;
