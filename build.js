@@ -38,6 +38,12 @@ function markdown(md) {
     .map((block) => {
       block = block.trim();
       if (!block) return '';
+            const fig = block.match(/^!\[(.*?)\]\((.+?)\)(\{left\})?$/);
+      if (fig) {
+        const side = fig[3] ? 'left' : 'right';
+        const caption = fig[1] ? `<figcaption>${fig[1]}</figcaption>` : '';
+        return `<figure class="portrait ${side}"><img src="${fig[2]}" alt="${fig[1]}">${caption}</figure>`;
+      }
       const h = block.match(/^(#{1,4})\s+(.*)$/);
       if (h) return `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
       if (/^[-*] /.test(block)) return list(block);
@@ -64,7 +70,9 @@ const rune = () => RUNES[Math.floor(Math.random() * RUNES.length)];
 
 // Keeps the page's shape but swaps every letter and digit for a random rune
 function sealed(html) {
-  const noLinks = html.replace(/<a [^>]*>|<\/a>/g, '');
+  const noLinks = html
+    .replace(/<figure[\s\S]*?<\/figure>/g, '')
+    .replace(/<a [^>]*>|<\/a>/g, '');
   const scrambled = noLinks.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, text) =>
     tag ? tag : text.replace(/[A-Za-z0-9]/g, rune));
   return `<div class="cipher">${scrambled}</div>`;
@@ -163,4 +171,5 @@ for (const p of pages) {
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
 fs.copyFileSync('style.css', 'dist/style.css');
+if (fs.existsSync('content/images')) fs.cpSync('content/images', 'dist/images', { recursive: true });
 console.log(`Built ${pages.length} pages`);

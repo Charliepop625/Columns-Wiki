@@ -121,3 +121,29 @@ nav summary::before { content: '▸ '; color: var(--accent); }
 nav details[open] > summary::before { content: '▾ '; }
 nav summary:hover { color: var(--accent); font-style: italic; }
 nav details a { padding-left: 1.25rem; font-size: 1.05rem; }
+
+figure.portrait {
+  width: 240px;
+  margin: 0.3rem 0 1rem 1.5rem;
+  padding: 0.5rem;
+  float: right;
+  background: var(--paper-dark);
+  border: 1px solid var(--ink-soft);
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.3);
+}
+figure.portrait.left { float: left; margin: 0.3rem 1.5rem 1rem 0; }
+figure.portrait img {
+  display: block;
+  width: 100%;
+  filter: sepia(0.35) contrast(0.95);
+}
+figure.portrait figcaption {
+  margin-top: 0.4rem;
+  text-align: center;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+@media (max-width: 760px) {
+  figure.portrait, figure.portrait.left { float: none; margin: 1rem auto; max-width: 300px; width: 100%; }
+}
