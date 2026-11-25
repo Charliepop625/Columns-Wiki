@@ -147,3 +147,81 @@ figure.portrait figcaption {
 @media (max-width: 760px) {
   figure.portrait, figure.portrait.left { float: none; margin: 1rem auto; max-width: 300px; width: 100%; }
 }
+.indent-1 { text-indent: 2rem; }
+.indent-2 { text-indent: 4rem; }
+.indent-3 { text-indent: 6rem; }
+.indent-4 { text-indent: 8rem; }
+@media (max-width: 760px) {
+  .indent-1 { text-indent: 1rem; }
+  .indent-2 { text-indent: 2rem; }
+  .indent-3 { text-indent: 3rem; }
+  .indent-4 { text-indent: 4rem; }
+}
+
+.cipher.block {
+  margin: 0 0 1rem;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 2px solid var(--accent);
+}
+
+pre {
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  overflow-x: auto;
+  background: rgba(59, 42, 26, 0.09);
+  border: 1px solid var(--ink-soft);
+  border-left: 4px solid var(--accent);
+  line-height: 1.5;
+}
+code {
+  font-family: Consolas, Menlo, 'Courier New', monospace;
+  font-size: 0.9em;
+}
+p code, li code {
+  padding: 0.1em 0.35em;
+  background: rgba(59, 42, 26, 0.12);
+  border-radius: 3px;
+}
+
+pre code { padding: 0; background: none; font-size: 0.95rem; }
+
+main > p:first-of-type { display: flow-root; }
+
+table {
+  width: 100%;
+  margin: 0 0 1.5rem;
+  border-collapse: collapse;
+  border: 2px double var(--ink-soft);
+  background: rgba(230, 211, 163, 0.35);
+}
+th, td {
+  padding: 0.5rem 0.9rem;
+  text-align: left;
+  vertical-align: top;
+  border: 1px solid var(--ink-soft);
+}
+th {
+  font-family: 'IM Fell English SC', Georgia, serif;
+  font-weight: normal;
+  letter-spacing: 0.08em;
+  background: rgba(122, 46, 29, 0.12);
+}
+@media (max-width: 760px) {
+  table { display: block; overflow-x: auto; }
+}
+
+hr {
+  height: 1.2rem;
+  margin: 1.5rem 0;
+  border: none;
+  text-align: center;
+  background:
+    linear-gradient(var(--ink-soft), var(--ink-soft)) left center / 42% 1px no-repeat,
+    linear-gradient(var(--ink-soft), var(--ink-soft)) right center / 42% 1px no-repeat;
+}
+hr::after {
+  content: '❦';
+  color: var(--accent);
+  font-size: 1.1rem;
+  line-height: 1.2rem;
+}

@@ -4,7 +4,7 @@ title: Jeremiah
 
 *The up and coming snail tag champion*
 
-Jeremiah is a beige snail who is a rookie snail tag competitor. He is most often found on [[Corinthia]]'s hat, moving at a pace that is typical of a snail.
+Jeremiah is a beige snail who is a rookie snail tag competitor. He is most often found on [[build-corinthian|Corinthia]]'s hat, moving at a pace that is typical of a snail.
 
 ## Appearance
 
@@ -26,7 +26,12 @@ Jeremiah is an above average size snail who's shell is brown with a spiral patte
 
 ## History
 
+:::locked
+Jeremiah is actually the lost heir of the Snail King, and he carries the
+royal seal inside the crack in his shell.
 
+He does not know this yet.
+:::
 
 ## Favorite Things
 
@@ -34,5 +39,6 @@ Jeremiah is an above average size snail who's shell is brown with a spiral patte
 
 ## Relationships
 
-- [[Corinthia]]: Best Friend? Lover? Secret third option?
-- [[Dion]]: Dislikes
+- [[build-corinthian|Corinthia]]: Best Friend? Lover? Secret third option?
+- [[build-ionic|Dion]]: Dislikes
+- [[build-doric|Isador]]: Mostlys

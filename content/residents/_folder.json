@@ -1,5 +1,5 @@
 {
   "label": "Residents",
   "position": 1,
-  "order": ["isador", "dion", "corinthia", "jeremiah", "all-residents"]
+  "order": ["admin-doric", "admin-ionic", "admin-corinthian", "jeremiah", "thomas-whitlock", "all-residents"]
 }

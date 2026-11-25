@@ -2,9 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const pageLookup = {};   // filled in after the pages are read
 
+// List menu on sidebar
 function list(block) {
   const lines = block.split('\n').filter((l) => l.trim());
   let html = '';
@@ -32,33 +35,63 @@ function list(block) {
   return html;
 }
 
+function table(block) {
+  const lines = block.split('\n');
+  const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => inline(c.trim()));
+  const head = cells(lines[0]).map((c) => `<th>${c}</th>`).join('');
+  const rows = lines.slice(2)
+    .map((l) => `<tr>${cells(l).map((c) => `<td>${c}</td>`).join('')}</tr>`)
+    .join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
 function markdown(md) {
+  md = md.replace(/\r\n/g, '\n');
+  const codes = [];
+  md = md.replace(/^```[^\n]*\n([\s\S]*?)\n```[ \t]*$/gm, (_, code) => {
+    codes.push(code);
+    return `\n\n@@CODE${codes.length - 1}@@\n\n`;
+  });
   return md
     .split(/\n{2,}/)
     .map((block) => {
       block = block.trim();
       if (!block) return '';
-            const fig = block.match(/^!\[(.*?)\]\((.+?)\)(\{left\})?$/);
+      if (/^(-{3,}|\*{3,})$/.test(block)) return '<hr>';
+      const rowsOfBlock = block.split('\n');
+      if (rowsOfBlock.length > 2 && /^\|.*\|$/.test(rowsOfBlock[0].trim()) && /^\|?\s*:?-{3,}/.test(rowsOfBlock[1].trim())) {
+        return table(block);
+      }
+      const c = block.match(/^@@CODE(\d+)@@$/);
+      if (c) return `<pre><code>${escapeHtml(codes[c[1]])}</code></pre>`;
+      const fig = block.match(/^!\[(.*?)\]\((.+?)\)(\{left\})?$/);
       if (fig) {
         const side = fig[3] ? 'left' : 'right';
         const caption = fig[1] ? `<figcaption>${fig[1]}</figcaption>` : '';
         return `<figure class="portrait ${side}"><img src="${fig[2]}" alt="${fig[1]}">${caption}</figure>`;
       }
+      const q = block.match(/^(>+)/);
+      if (q) {
+        const level = Math.min(q[1].length, 4);
+        const text = block.split('\n').map((l) => l.replace(/^>+\s?/, '')).join(' ');
+        return `<p class="indent indent-${level}">${inline(text)}</p>`;
+      }
       const h = block.match(/^(#{1,4})\s+(.*)$/);
       if (h) return `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`;
       if (/^[-*] /.test(block)) return list(block);
-      return `<p>${inline(block)}</p>`;
+      return `<p>${inline(block).replace(/\n/g, '<br>')}</p>`;
     })
     .join('\n');
 }
 
 function inline(s) {
   return s
-    .replace(/\[\[(.+?)\]\]/g, (_, name) => {
+    .replace(/\[\[(.+?)\]\]/g, (_, inner) => {
+      const [name, custom] = inner.split('|').map((x) => x.trim());
       const target = pageLookup[slugify(name)];
-      return target
-        ? `<a href="/${target.outSlug}/">${target.shownTitle}</a>`
-        : `<a href="/${slugify(name)}/">${name}</a>`;
+      if (!target) return `<a href="/${slugify(name)}/">${custom || name}</a>`;
+      const text = target.locked ? target.shownTitle : (custom || target.shownTitle);
+      return `<a href="/${target.outSlug}/">${text}</a>`;
     })
     .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -76,6 +109,25 @@ function sealed(html) {
   const scrambled = noLinks.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, text) =>
     tag ? tag : text.replace(/[A-Za-z0-9]/g, rune));
   return `<div class="cipher">${scrambled}</div>`;
+}
+
+function sealedBlock(html) {
+  const clean = html
+    .replace(/<figure[\s\S]*?<\/figure>/g, '')
+    .replace(/<a [^>]*>|<\/a>/g, '');
+  const out = clean.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, text) =>
+    tag ? tag : text.replace(/[A-Za-z0-9]/g, rune));
+  return `<div class="cipher block">${out}</div>`;
+}
+
+// Turns a page body into HTML, scrambling any :::locked blocks
+function render(body) {
+  const parts = body
+    .replace(/\r\n/g, '\n')
+    .split(/^:::locked[ \t]*\n([\s\S]*?)\n:::[ \t]*$/m);
+  return parts
+    .map((part, i) => (i % 2 ? sealedBlock(markdown(part)) : markdown(part)))
+    .join('\n');
 }
 
 function parse(raw, fallbackTitle) {
@@ -167,7 +219,7 @@ for (const p of pages) {
   const html = template
     .replace(/{{title}}/g, p.shownTitle)
     .replace('{{nav}}', buildNav(p.slug))
-    .replace('{{content}}', p.locked ? sealed(markdown(p.body)) : markdown(p.body));
+    .replace('{{content}}', p.locked ? sealed(render(p.body)) : render(p.body));
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
 }
 fs.copyFileSync('style.css', 'dist/style.css');
